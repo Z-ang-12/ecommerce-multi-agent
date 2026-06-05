@@ -1,0 +1,6 @@
+venv/
+ecommerce_db/
+*.log
+.env
+.git
+faq_suggestions.txt
