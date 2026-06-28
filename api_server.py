@@ -7,9 +7,19 @@ import requests
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from functools import lru_cache
+
+import time as _time
+
+async def add_request_logging(request, call_next):
+    """中间件：记录每个请求的方法、路径和耗时"""
+    start_time = _time.time()
+    response = await call_next(request)
+    process_time = _time.time() - start_time
+    print(f"⏱️ {request.method} {request.url.path} - 耗时: {process_time:.3f}秒")
+    return response
+
 from fastapi import FastAPI, Depends, BackgroundTasks, WebSocket, WebSocketDisconnect, HTTPException
 from pydantic import BaseModel, Field
-from middleware import add_request_logging
 from dependencies import get_embeddings, get_current_user
 from langchain.agents import create_agent
 from langchain_deepseek import ChatDeepSeek
@@ -198,7 +208,7 @@ async def websocket_chat(websocket: WebSocket, embeddings=Depends(get_embeddings
     
     except WebSocketDisconnect:
         print("客户端断开了 WebSocket 连接")
-        
+
 @app.get("/health")
 def health_check():
     return {"status": "running"}
