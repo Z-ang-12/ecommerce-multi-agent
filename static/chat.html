@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 客服实时对话</title>
+    <style>
+        body { font-family: 'Microsoft YaHei', sans-serif; max-width: 700px; margin: 0 auto; padding: 20px; background: #f5f5f5; }
+        .chat-container { background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden; }
+        .chat-header { background: #4a90d9; color: white; padding: 15px; font-size: 18px; font-weight: bold; }
+        .messages { height: 400px; overflow-y: auto; padding: 20px; background: #fafafa; }
+        .message { margin-bottom: 15px; display: flex; }
+        .message.user { justify-content: flex-end; }
+        .message-bubble { max-width: 70%; padding: 10px 15px; border-radius: 18px; line-height: 1.5; }
+        .message.user .message-bubble { background: #4a90d9; color: white; border-bottom-right-radius: 5px; }
+        .message.agent .message-bubble { background: #e8e8e8; color: #333; border-bottom-left-radius: 5px; }
+        .input-area { display: flex; padding: 15px; border-top: 1px solid #eee; background: white; }
+        .input-area input { flex: 1; padding: 10px 15px; border: 1px solid #ddd; border-radius: 25px; font-size: 14px; }
+        .input-area button { margin-left: 10px; padding: 10px 25px; background: #4a90d9; color: white; border: none; border-radius: 25px; cursor: pointer; font-size: 14px; }
+        .typing-indicator { color: #888; font-size: 12px; padding: 10px 20px; display: none; }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">🤖 AI 电商客服</div>
+        <div class="messages" id="messages">
+            <div class="message agent">
+                <div class="message-bubble">您好！欢迎光临，我是您的专属AI客服。请问有什么可以帮您的吗？😊</div>
+            </div>
+        </div>
+        <div class="typing-indicator" id="typing">客服正在输入...</div>
+               <div class="input-area" style="flex-direction: column; gap: 10px;">
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="userInput" placeholder="输入问题，或粘贴图片URL进行分析..." style="flex: 1;" onkeydown="if(event.key==='Enter') sendMessage()">
+                <button onclick="sendMessage()">发送</button>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <input type="text" id="imageUrl" placeholder="图片URL（如 https://example.com/photo.jpg）" style="flex: 1; font-size: 12px;">
+                <input type="text" id="productType" placeholder="商品类型（如：陶瓷水杯）" style="width: 150px; font-size: 12px;">
+                <button onclick="analyzeImage()" style="background: #e67e22; font-size: 12px;">分析图片</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const ws = new WebSocket("ws://127.0.0.1:8000/ws/chat");
+        const messagesDiv = document.getElementById("messages");
+        const typingDiv = document.getElementById("typing");
+        const input = document.getElementById("userInput");
+
+        ws.onopen = () => console.log("WebSocket 连接已建立");
+        
+        ws.onmessage = (event) => {
+            typingDiv.style.display = "none";
+            const agentBubble = document.createElement("div");
+            agentBubble.className = "message agent";
+            agentBubble.innerHTML = `<div class="message-bubble">${event.data}</div>`;
+            messagesDiv.appendChild(agentBubble);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        };
+
+        ws.onclose = () => console.log("WebSocket 连接已关闭");
+
+        function sendMessage() {
+            const message = input.value.trim();
+            if (!message) return;
+            
+            // 显示用户消息
+            const userBubble = document.createElement("div");
+            userBubble.className = "message user";
+            userBubble.innerHTML = `<div class="message-bubble">${message}</div>`;
+            messagesDiv.appendChild(userBubble);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            
+            // 发送到服务器
+            ws.send(message);
+            input.value = "";
+            typingDiv.style.display = "block";
+        }
+                function analyzeImage() {
+            const imageUrl = document.getElementById("imageUrl").value.trim();
+            const productType = document.getElementById("productType").value.trim() || "商品";
+            
+            if (!imageUrl) {
+                alert("请先粘贴图片URL");
+                return;
+            }
+            
+            // 显示用户消息
+            const userBubble = document.createElement("div");
+            userBubble.className = "message user";
+            userBubble.innerHTML = `<div class="message-bubble">🔍 分析图片：${productType}<br><img src="${imageUrl}" style="max-width: 200px; border-radius: 10px; margin-top: 5px;"></div>`;
+            messagesDiv.appendChild(userBubble);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            
+            // 通过 WebSocket 发送图片分析指令
+            const command = `ANALYZE_IMAGE:${imageUrl}|${productType}`;
+            ws.send(command);
+            
+            document.getElementById("imageUrl").value = "";
+            document.getElementById("productType").value = "";
+            typingDiv.style.display = "block";
+        }
+    </script>
+</body>
+</html>
