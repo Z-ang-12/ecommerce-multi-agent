@@ -40,8 +40,7 @@ llm = ChatDeepSeek(model="deepseek-chat", api_key=DEEPSEEK_API_KEY, temperature=
 @lru_cache()
 def get_embeddings():
     return HuggingFaceEmbeddings(
-        model_name="C:\\Users\\asus\\.cache\\huggingface\\hub\\models--sentence-transformers--all-MiniLM-L6-v2\\snapshots\\1110a243fdf4706b3f48f1d95db1a4f5529b4d41"
-    )
+       model_name="sentence-transformers/all-MiniLM-L6-v2"
 
 # ==================== FastAPI 应用 ====================
 app = FastAPI(title="AI客服API")
