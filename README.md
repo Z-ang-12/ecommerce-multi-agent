@@ -5,13 +5,14 @@
 
 ## 技术栈
 - **大模型**：DeepSeek-chat
+- **多模态模型**：硅基流动 Nex-N2-Pro
 - **Agent 框架**：LangChain（Multi-Agent 协作）
 - **向量数据库**：ChromaDB（知识库语义检索）
 - **业务数据库**：SQLite + SQLAlchemy ORM（聊天记录存储与统计分析）
-- **前端界面**：Gradio（网页聊天界面，支持公网链接分享）
-- **后端 API**：FastAPI + Uvicorn
-- **容器化部署**：Docker + GitHub Actions + 阿里云容器镜像仓库
-- **安全实践**：环境变量管理 API Key、参数化查询防 SQL 注入、.gitignore 防泄露
+- **后端 API**：FastAPI + Uvicorn（HTTP + WebSocket）
+- **认证**：JWT（python-jose）
+- **前端界面**：原生 HTML/CSS/JS + WebSocket 实时聊天
+- **容器化部署**：Docker + GitHub Actions + 阿里云容器镜像仓库 + 阿里云 ECS
 
 ## 架构设计
 
@@ -31,15 +32,26 @@ Agent 2（客服专员）检索知识库 → 生成回复
 ↓
 如果知识库未覆盖 → Agent 3（知识更新建议师）自动生成更新建议
 
+## API 接口全览
+
+| 接口 | 协议 | 认证 | 功能 |
+|:---|:---|:---|:---|
+| `POST /token` | HTTP | 无 | 获取 JWT Token |
+| `POST /chat` | HTTP | JWT | 文字客服问答 |
+| `POST /analyze-image` | HTTP | JWT | 商品瑕疵图片分析 |
+| `WS /ws/chat` | WebSocket | 无 | 实时文字对话 + 图片分析 |
+| `GET /health` | HTTP | 无 | 健康检查 |
 
 ## 核心功能
-- **智能意图分类**：自动识别问候、退货、物流、支付、发票、非业务等6种问题类型
-- **RAG 知识库检索**：基于退换货政策、物流规则、支付方式等FAQ进行语义检索
-- **知识库自我进化**：检测到知识盲区时自动生成 Q&A 格式的更新建议，系统具备持续学习能力
-- **Gradio 网页界面**：一键启动聊天窗口，支持公网链接分享给客户试用
-- **对话记录持久化**：自动存入 SQLite 数据库，支持历史查询和统计分析
-- **FastAPI 服务化**：将 Agent 包装为 RESTful API，可通过 HTTP 请求调用
-- **Docker 一键部署**：支持本地构建、阿里云镜像仓库推送、GitHub Actions 自动构建
+- **Multi-Agent 协作**：三个 Agent 分工明确，各司其职
+- **智能意图分类**：自动识别问候、退货、物流、支付、发票、非业务等类型
+- **RAG 知识库检索**：基于 ChromaDB 的语义检索，精准匹配 FAQ
+- **知识库自我进化**：检测盲区时自动生成 Q&A 更新建议
+- **FastAPI 全栈后端**：中间件日志、依赖注入、JWT 认证、后台任务
+- **WebSocket 实时通信**：一次连接，持续对话，支持文字和图片双模式
+- **多模态图片分析**：用户上传商品照片，AI 自动识别瑕疵并给出退货建议
+- **原生聊天界面**：HTML/CSS/JS 构建，WebSocket 直连后端
+- **Docker 一键部署**：GitHub Actions 自动构建 + 阿里云 ECS 公网访问
 
 ## 使用方法
 
@@ -58,24 +70,31 @@ bash
 ### 方式三：Docker 部署
 bash
 docker pull crpi-3xramxlts8n8u77t.cn-guangzhou.personal.cr.aliyuncs.com/ai-agent123/ecommerce-multi-agent:latest
-docker run -p 8000:8000 --env-file .env crpi-3xramxlts8n8u77t.cn-guangzhou.personal.cr.aliyuncs.com/ai-agent123/ecommerce-multi-agent:latest
+docker run -d -p 8000:8000 \
+  -e DEEPSEEK_API_KEY=deepseek的key \
+  -e SILICONFLOW_API_KEY=硅基流动key \
+  crpi-3xramxlts8n8u77t.cn-guangzhou.personal.cr.aliyuncs.com/ai-agent123/ecommerce-multi-agent:latest
+
+### 方式四：访问公网部署
+text
+http://你的公网IP:8000/docs          # Swagger API 文档
+http://你的公网IP:8000/static/chat.html  # 实时聊天界面
 
 ### 项目演进路径
 本项目是 AI Agent 开发能力从 0 到 1 的完整演进记录：
+V1：单工具天气 Agent
 
-V1：单工具天气 Agent（学习 API 调用）
+V2：多工具生活助手
 
-V2：多工具生活助手（天气+美食+记忆）
+V3：RAG 增强型助手
 
-V3：RAG 增强型助手（向量数据库语义检索）
+V4：Agentic RAG 智能路由
 
-V4：Agentic RAG 智能路由（自主判断是否需要检索）
+V5：Multi-Agent 协作系统
 
-V5：Multi-Agent 协作系统（三 Agent 分工）
+V6：FastAPI 服务化 + Docker 容器化
 
-V6：FastAPI 服务化 + Docker 容器化 + GitHub Actions 自动构建
-
-V7：Gradio 前端界面 + SQLite 业务数据库 + SQLAlchemy ORM
+V7：WebSocket 实时通信 + JWT 认证 + 多模态 + 云部署
 
 ### 作者
 GitHub: [Z-ang-12]
